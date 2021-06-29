@@ -101,10 +101,13 @@ def main():
   preprocessors.insert(1, pos_tagger)
 
   if from_file:
-    with open(args.data_file, 'r') as data_file:
-      dataset = VictorNLPDataset(json.load(data_file), preprocessors)
+    with open(args.data_file['a']) as inputs_a, \
+       open(args.data_file['b']) as inputs_b, \
+       open(args.data_file['pair-info']) as inputs_pairinfo:
+      dataset = VictorNLPPairDataset(json.load(inputs_a), json.load(inputs_b), json.load(inputs_pairinfo), preprocessors)
+  
       # Prepare DataLoader instances
-      loader = DataLoader(dataset, train_config['batch_size'], shuffle=True, collate_fn=VictorNLPDataset.collate_fn)
+      loader = DataLoader(dataset, train_config['batch_size'], shuffle=True)
       if args.analyze:
         # If evaluation mode, input must contain gold sts information
         for i in range(len(dataset)):

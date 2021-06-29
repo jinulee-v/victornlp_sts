@@ -2,10 +2,22 @@
   "language": {
     "korean": {
       "corpus": {
-        "train": "corpus/VictorNLP_kor()_train.json",
-        "dev": "corpus/VictorNLP_kor()_dev.json",
-        "test": "corpus/VictorNLP_kor()_test.json",
-        "labels": "corpus/VictorNLP_kor()_labels.json"
+        "train": {
+          "a": "corpus/VictorNLP_kor(KorSTS)_train.a.json",
+          "b": "corpus/VictorNLP_kor(KorSTS)_train.b.json",
+          "pairinfo": "corpus/VictorNLP_kor(KorSTS)_train.scores.json"
+        },
+        "dev": {
+          "a": "corpus/VictorNLP_kor(KorSTS)_dev.a.json",
+          "b": "corpus/VictorNLP_kor(KorSTS)_dev.b.json",
+          "pairinfo": "corpus/VictorNLP_kor(KorSTS)_dev.scores.json"
+        },
+        "test": {
+          "a": "corpus/VictorNLP_kor(KorSTS)_test.a.json",
+          "b": "corpus/VictorNLP_kor(KorSTS)_test.b.json",
+          "pairinfo": "corpus/VictorNLP_kor(KorSTS)_test.scores.json"
+        },
+        "labels": "corpus/VictorNLP_kor(KorSTS)_labels.json"
       },
       "embedding": ["etri-korbert"],
       "preprocessors": ["word-count"],

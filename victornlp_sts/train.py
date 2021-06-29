@@ -130,17 +130,23 @@ def main():
   preprocessors = [dataset_preprocessors[alias] for alias in language_config['preprocessors']]
   
   train_dataset, dev_dataset, test_dataset, type_label = None, None, None, None
-  with open(train_path) as train_corpus_file:
-    train_dataset = VictorNLPDataset(json.load(train_corpus_file), preprocessors)
-  with open(test_path) as test_corpus_file:
-    test_dataset = VictorNLPDataset(json.load(test_corpus_file), preprocessors)
+  with open(train_path['a']) as train_corpus_file_a, \
+       open(train_path['b']) as train_corpus_file_b, \
+       open(train_path['pair-info']) as train_corpus_file_pairinfo:
+    train_dataset = VictorNLPPairDataset(json.load(train_corpus_file_a), json.load(train_corpus_file_b), json.load(train_corpus_file_pairinfo), preprocessors)
+  with open(test_path['a']) as test_corpus_file_a, \
+       open(test_path['b']) as test_corpus_file_b, \
+       open(test_path['pair-info']) as test_corpus_file_pairinfo:
+    test_dataset = VictorNLPPairDataset(json.load(test_corpus_file_a), json.load(test_corpus_file_b), json.load(test_corpus_file_pairinfo), preprocessors)
   with open(labels_path) as type_label_file:
     type_label = json.load(type_label_file)['sts_labels']
 
   # Split dev datasets
   if dev_path:
-    with open(dev_path) as dev_corpus_file:
-      dev_dataset = VictorNLPDataset(json.load(dev_corpus_file), preprocessors)
+    with open(dev_path['a']) as dev_corpus_file_a, \
+         open(dev_path['b']) as dev_corpus_file_b, \
+         open(dev_path['pair-info']) as dev_corpus_file_pairinfo:
+      dev_dataset = VictorNLPPairDataset(json.load(dev_corpus_file_a), json.load(dev_corpus_file_b), json.load(dev_corpus_file_pairinfo), preprocessors)
   else:
     if train_dev_ratio and train_dev_ratio < 1.:
       split = random_split(train_dataset, [int(len(train_dataset) * train_dev_ratio), len(train_dataset) - int(len(train_dataset)*train_dev_ratio)])
@@ -150,10 +156,10 @@ def main():
       dev_dataset = VictorNLPDataset({})
   
   # Prepare DataLoader instances
-  train_loader = DataLoader(train_dataset, train_config['batch_size'], shuffle=True, collate_fn=VictorNLPDataset.collate_fn)
+  train_loader = DataLoader(train_dataset, train_config['batch_size'], shuffle=True)
   if dev_dataset:
-    dev_loader = DataLoader(dev_dataset, train_config['batch_size'], shuffle=False, collate_fn=VictorNLPDataset.collate_fn)
-  test_loader = DataLoader(test_dataset, train_config['batch_size'], shuffle=False, collate_fn=VictorNLPDataset.collate_fn)
+    dev_loader = DataLoader(dev_dataset, train_config['batch_size'], shuffle=False)
+  test_loader = DataLoader(test_dataset, train_config['batch_size'], shuffle=False)
   logger.info('done\n')
   
   # Create model
@@ -192,7 +198,7 @@ def main():
     iter = tqdm(train_loader)
     for i, batch in enumerate(iter):
       optimizer.zero_grad()
-      loss = loss_fn(model, batch)
+      loss = loss_fn(model, *batch)
       loss.backward()
       optimizer.step()
     
@@ -206,8 +212,8 @@ def main():
         loss = 0
         cnt = 0
         for batch in tqdm(dev_loader):
-          cnt += len(batch)
-          loss += float(loss_fn(model, batch)) * len(batch)
+          cnt += len(batch[0])
+          loss += float(loss_fn(model, *batch)) * len(batch[0])
         logger.info('Dev loss: %f', loss/cnt)
         if early_stopper(epoch, loss/cnt, model, 'models/' + title + '/model.pt'):
           break
@@ -220,7 +226,7 @@ def main():
       model.eval()
       for batch in tqdm(test_loader):
         # Call by reference modifies the original batch
-        run_fn(model, batch, language_config['run']) 
+        run_fn(model, *batch, language_config['run']) 
       
       logger.info(accuracy(test_dataset))
       logger.info('-'*40)
