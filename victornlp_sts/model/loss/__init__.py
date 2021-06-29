@@ -15,3 +15,5 @@ def register_loss_fn(name):
     sts_loss_fn[name] = fn
     return fn
   return decorator
+
+from .loss_sparse_dist import *
