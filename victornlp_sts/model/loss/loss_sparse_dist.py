@@ -32,6 +32,7 @@ def loss_sparse_dist(model, inputs_a, inputs_b, inputs_pairinfo, **kwargs):
   # FIXME: assertion that score is 0~5 range
   MAX_SCORE = 5
   for i, score in enumerate(inputs_pairinfo):
+    score = score['score']
     if score == MAX_SCORE:
       mask[i, -1] = 1
       sparse[i, -1] = 1
