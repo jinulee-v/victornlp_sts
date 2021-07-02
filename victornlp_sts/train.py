@@ -33,6 +33,7 @@ def argparse_cmd_args() :
   parser.add_argument('--title', type=str)
   parser.add_argument('--language', type=str, help='language. Currently supported: {korean, english}')
   parser.add_argument('--model', choices=sts_model.keys(), help='sts model. Choose sts name from default config file.')
+  parser.add_argument('--loss-fn', choices=sts_loss_fn.keys(), help='sts loss function. Choose sts loss function from default config file.')
   parser.add_argument('--embedding', '-e', type=str, choices=embeddings.keys(), nargs='?', action='append', help='Embedding class names.')
   parser.add_argument('--epoch', type=int, help='training epochs')
   parser.add_argument('--batch-size', type=int, help='batch size for training')
@@ -138,8 +139,6 @@ def main():
        open(test_path['b']) as test_corpus_file_b, \
        open(test_path['pair-info']) as test_corpus_file_pairinfo:
     test_dataset = VictorNLPPairDataset(json.load(test_corpus_file_a), json.load(test_corpus_file_b), json.load(test_corpus_file_pairinfo), preprocessors)
-  with open(labels_path) as type_label_file:
-    type_label = json.load(type_label_file)['sts_labels']
 
   # Split dev datasets
   if dev_path:
@@ -156,10 +155,10 @@ def main():
       dev_dataset = VictorNLPDataset({})
   
   # Prepare DataLoader instances
-  train_loader = DataLoader(train_dataset, train_config['batch_size'], shuffle=True)
+  train_loader = DataLoader(train_dataset, train_config['batch_size'], shuffle=True, collate_fn=VictorNLPPairDataset.collate_fn)
   if dev_dataset:
-    dev_loader = DataLoader(dev_dataset, train_config['batch_size'], shuffle=False)
-  test_loader = DataLoader(test_dataset, train_config['batch_size'], shuffle=False)
+    dev_loader = DataLoader(dev_dataset, train_config['batch_size'], shuffle=False, collate_fn=VictorNLPPairDataset.collate_fn)
+  test_loader = DataLoader(test_dataset, train_config['batch_size'], shuffle=False, collate_fn=VictorNLPPairDataset.collate_fn)
   logger.info('done\n')
   
   # Create model
@@ -173,12 +172,13 @@ def main():
   
   # Backpropagation settings
   optimizers = {
-    'adam': Adam
+    'adam': Adam,
+    'adagrad': Adagrad
   }
   loss_fn = sts_loss_fn[train_config['loss_fn']]
   optimizer = optimizers[train_config['optimizer']](model.parameters(), train_config['learning_rate'])
   run_fn = sts_run_fn[train_config['run_fn']]
-  accuracy = sts_analysis_fn['accuracy']
+  correlation = sts_analysis_fn['pearson-r']
 
   # Early Stopping settings
   if dev_dataset:
@@ -218,9 +218,9 @@ def main():
         if early_stopper(epoch, loss/cnt, model, 'models/' + title + '/model.pt'):
           break
     
-    # Accuracy
+    # Accuracy(Correlation)
     logger.info('')
-    logger.info('Accuracy')
+    logger.info('Correlation')
     
     with torch.no_grad():
       model.eval()
@@ -228,7 +228,7 @@ def main():
         # Call by reference modifies the original batch
         run_fn(model, *batch, language_config['run']) 
       
-      logger.info(accuracy(test_dataset))
+      logger.info(correlation(test_dataset._data_a, test_dataset._data_b, test_dataset._data_pairinfo))
       logger.info('-'*40)
       logger.info('')
   

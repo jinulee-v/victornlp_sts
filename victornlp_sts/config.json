@@ -5,17 +5,17 @@
         "train": {
           "a": "corpus/VictorNLP_kor(KorSTS)_train.a.json",
           "b": "corpus/VictorNLP_kor(KorSTS)_train.b.json",
-          "pairinfo": "corpus/VictorNLP_kor(KorSTS)_train.scores.json"
+          "pair-info": "corpus/VictorNLP_kor(KorSTS)_train.pairinfo.json"
         },
         "dev": {
           "a": "corpus/VictorNLP_kor(KorSTS)_dev.a.json",
           "b": "corpus/VictorNLP_kor(KorSTS)_dev.b.json",
-          "pairinfo": "corpus/VictorNLP_kor(KorSTS)_dev.scores.json"
+          "pair-info": "corpus/VictorNLP_kor(KorSTS)_dev.pairinfo.json"
         },
         "test": {
           "a": "corpus/VictorNLP_kor(KorSTS)_test.a.json",
           "b": "corpus/VictorNLP_kor(KorSTS)_test.b.json",
-          "pairinfo": "corpus/VictorNLP_kor(KorSTS)_test.scores.json"
+          "pair-info": "corpus/VictorNLP_kor(KorSTS)_test.pairinfo.json"
         },
         "labels": "corpus/VictorNLP_kor(KorSTS)_labels.json"
       },
@@ -26,12 +26,24 @@
     },
     "english": {
       "corpus": {
-        "train": "corpus/VictorNLP_eng()_train.json",
-        "dev": "corpus/VictorNLP_eng()_dev.json",
-        "test": "corpus/VictorNLP_eng()_test.json",
-        "labels": "corpus/VictorNLP_eng()_labels.json"
+        "train": {
+          "a": "corpus/VictorNLP_eng(SICK)_train.a.json",
+          "b": "corpus/VictorNLP_eng(SICK)_train.b.json",
+          "pair-info": "corpus/VictorNLP_eng(SICK)_train.pairinfo.json"
+        },
+        "dev": {
+          "a": "corpus/VictorNLP_eng(SICK)_dev.a.json",
+          "b": "corpus/VictorNLP_eng(SICK)_dev.b.json",
+          "pair-info": "corpus/VictorNLP_eng(SICK)_dev.pairinfo.json"
+        },
+        "test": {
+          "a": "corpus/VictorNLP_eng(SICK)_test.a.json",
+          "b": "corpus/VictorNLP_eng(SICK)_test.b.json",
+          "pair-info": "corpus/VictorNLP_eng(SICK)_test.pairinfo.json"
+        },
+        "labels": "corpus/VictorNLP_eng(SICK)_labels.json"
       },
-      "embedding": ["etri-korbert"],
+      "embedding": ["glove-eng"],
       "preprocessors": ["word-count"],
       "run": {
       }
@@ -45,7 +57,7 @@
       }
     },
     "pos-wp-kor": {
-      "file_directory": "victornlp_sentiment/victornlp_utils/embedding/data/EmbeddingPoS_kor.json",
+      "file_directory": "victornlp_sts/victornlp_utils/embedding/data/EmbeddingPoS_kor.json",
       "key": "pos_tag",
       "from_pretrained": 0,
       "embed_size": 50,
@@ -57,7 +69,7 @@
       }
     },
     "glove-wp-kor": {
-      "file_directory": "victornlp_sentiment/victornlp_utils/embedding/data/EmbeddingGloVe_kor.json",
+      "file_directory": "victornlp_sts/victornlp_utils/embedding/data/EmbeddingGloVe_kor.json",
       "key": "joined",
       "from_pretrained": 1,
       "train": 0,
@@ -68,7 +80,7 @@
       }
     },
     "etri-korbert": {
-      "file_directory": "victornlp_sentiment/victornlp_utils/embedding/data/EmbeddingBERTMorph_kor",
+      "file_directory": "victornlp_sts/victornlp_utils/embedding/data/EmbeddingBERTMorph_kor",
       "word_phrase": 1,
       "train": 0,
       "special_tokens": {
@@ -83,7 +95,7 @@
       }
     },
     "pos-eng": {
-      "file_directory": "victornlp_sentiment/victornlp_utils/embedding/data/EmbeddingPoS_eng.json",
+      "file_directory": "victornlp_sts/victornlp_utils/embedding/data/EmbeddingPoS_eng.json",
       "key": "pos_tag",
       "from_pretrained": 0,
       "embed_size": 50,
@@ -95,7 +107,7 @@
       }
     },
     "glove-eng": {
-      "file_directory": "victornlp_sentiment/victornlp_utils/embedding/data/EmbeddingGloVe_eng.json",
+      "file_directory": "victornlp_sts/victornlp_utils/embedding/data/EmbeddingGloVe_eng.json",
       "key": "text",
       "from_pretrained": 1,
       "train": 0,
@@ -108,18 +120,20 @@
   },
   "model": {
     "tree-lstm": {
-      "hidden_size": 512
+      "hidden_size": 150,
+      "classifier_size": 50,
+      "r_size": 5
     }
   },
   "train": {
     "language": "korean",
     "model": "tree-lstm",
-    "loss_fn": "local-xbce",
-    "run_fn": "run_sentiment",
+    "loss_fn": "sparse-dist",
+    "run_fn": "sparse-dist",
     "epoch": 100,
-    "batch_size": 64,
-    "optimizer": "adam",
-    "learning_rate": 0.001,
+    "batch_size": 25,
+    "optimizer": "adagrad",
+    "learning_rate": 0.025,
     "device": "cuda:0",
     "early_stopping": {
       "patience": 3,

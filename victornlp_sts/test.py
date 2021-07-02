@@ -107,7 +107,7 @@ def main():
       dataset = VictorNLPPairDataset(json.load(inputs_a), json.load(inputs_b), json.load(inputs_pairinfo), preprocessors)
   
       # Prepare DataLoader instances
-      loader = DataLoader(dataset, train_config['batch_size'], shuffle=True)
+      loader = DataLoader(dataset, train_config['batch_size'], shuffle=True, collate_fn=VictorNLPPairDataset.collate_fn)
       if args.analyze:
         # If evaluation mode, input must contain gold sts information
         for i in range(len(dataset)):
