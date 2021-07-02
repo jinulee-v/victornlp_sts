@@ -14,3 +14,5 @@ def register_run_fn(name):
     sts_run_fn[name] = fn
     return fn
   return decorator
+
+from .run_sparse_dist import *

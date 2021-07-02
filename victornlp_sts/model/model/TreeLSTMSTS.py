@@ -38,16 +38,17 @@ class TreeLSTMSTS(nn.Module):
       input_size += embedding.embed_size
     self.input_size = input_size
     self.hidden_size = config['hidden_size']
+    self.classifier_size = config['classifier_size']
     self.r_size = config['r_size']
 
     # Model layer (Tree-LSTM Encoder)
     self.encoder = ChildSumTreeLSTM(self.input_size, self.hidden_size)
     
     # Prediction layer
-    self.W_mul = nn.Linear(self.hidden_size, self.hidden_size)
-    self.W_diff = nn.Linear(self.hidden_size, self.hidden_size, bias=False)
+    self.W_mul = nn.Linear(self.hidden_size, self.classifier_size)
+    self.W_diff = nn.Linear(self.hidden_size, self.classifier_size)
     self.prediction = nn.Sequential(
-      nn.Linear(self.hidden_size, self.r_size),
+      nn.Linear(self.classifier_size * 2, self.r_size),
       nn.LogSoftmax(dim=1)
     )
   
@@ -68,15 +69,15 @@ class TreeLSTMSTS(nn.Module):
     for embedding in self.embeddings:
       embedded_1.append(embedding(inputs_a))
       embedded_2.append(embedding(inputs_b))
-    embedded_1 = torch.cat(embedded, dim=2)
-    embedded_2 = torch.cat(embedded, dim=2)
+    embedded_1 = torch.cat(embedded_1, dim=2)
+    embedded_2 = torch.cat(embedded_2, dim=2)
     
     # Run TreeLSTM and prediction
     results_1 = []
     results_2 = []
-    for i, tuple in enumerate(inputs):
+    for i, tuple in enumerate(zip(inputs_a, inputs_b)):
       hidden_state_1, _ = self.encoder(tuple[0]['dependency'], embedded_1[i], 0)
-      hidden_state_2, _ = self.encoder(tuple[0]['dependency'], embedded_2[i], 0)
+      hidden_state_2, _ = self.encoder(tuple[1]['dependency'], embedded_2[i], 0)
       results_1.append(hidden_state_1[0].unsqueeze(0))
       results_2.append(hidden_state_2[0].unsqueeze(0)) # Pick only hidden state of the ROOT.
     results_1 = torch.cat(results_1, dim=0)
@@ -85,7 +86,7 @@ class TreeLSTMSTS(nn.Module):
     # results: Tensor(batch_size, hidden_size)
     h_mul = results_1 * results_2
     h_diff = torch.abs(results_1 - results_2)
-    h_s = torch.sigmoid(self.W_mul(h_mul) + self.W_diff(h_diff))
+    h_s = torch.sigmoid(torch.cat((self.W_mul(h_mul), self.W_diff(h_diff)), dim=1))
     p_hat = self.prediction(h_s)
     # p_hat: Tensor(batch_size, r_size)
 

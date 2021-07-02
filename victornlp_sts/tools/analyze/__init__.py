@@ -1,8 +1,8 @@
-sentiment_analysis_fn = {}
+sts_analysis_fn = {}
 def register_analysis_fn(name):
   def decorator(fn):
-    sentiment_analysis_fn[name] = fn
+    sts_analysis_fn[name] = fn
     return fn
   return decorator
 
-from .accuracy import *
+from .correlations import *

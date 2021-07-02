@@ -15,3 +15,5 @@ def register_model(name):
     sts_model[name] = cls
     return cls
   return decorator
+
+from .TreeLSTMSTS import *
