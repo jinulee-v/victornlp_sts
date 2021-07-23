@@ -95,10 +95,11 @@ def main():
 
   # Prepare evaluation data if file is given
   from_file = bool(args.data_file)
-  pos_tagger = pos_taggers[language]
+  args.data_file = language_config['corpus']['test']
+  # pos_tagger = pos_taggers[language]
   assert language_config['preprocessors'][0] == 'word-count'
   preprocessors = [dataset_preprocessors[alias] for alias in language_config['preprocessors']]
-  preprocessors.insert(1, pos_tagger)
+  # preprocessors.insert(1, pos_tagger)
 
   if from_file:
     with open(args.data_file['a']) as inputs_a, \
@@ -111,15 +112,16 @@ def main():
       if args.analyze:
         # If evaluation mode, input must contain gold sts information
         for i in range(len(dataset)):
-          assert 'sts' in dataset[i]
+          assert 'sts' in dataset[i][2]
   else:
     logger.info('Receiving data from stdin...')
   
   # Create model
   logger.info('Preparing models...')
   device = torch.device(train_config['device'])
+  embeddings_list = language_config['embedding']
   embedding_objs = [embeddings[embedding_type](embedding_config[embedding_type]).to(device) for embedding_type in embeddings_list]
-  model = sts_model[model_name](embedding_objs, type_label, model_config)
+  model = sts_model[model_name](embedding_objs, None, model_config)
   model.load_state_dict(torch.load(args.model_dir + '/model.pt'))
   model = model.to(device)
 
@@ -131,11 +133,11 @@ def main():
       # From file data
 
       # Run and log time
-      before = datetime.now4()
+      before = datetime.now()
       logger.info('Started at...' + before.strftime(u'%Y%m%d %H:%M:%S'))
       for batch in tqdm(loader):
         # Call by reference modifies the original batch
-        run_fn(model, batch, language_config['run'])
+        run_fn(model, *batch, language_config['run'])
       after = datetime.now()
       logger.info('Finished at...' + after.strftime(u'%Y%m%d %H:%M:%S'))
       seconds = (after - before).total_seconds()
@@ -143,22 +145,21 @@ def main():
       logger.info('')
 
       # Run analysis functions
-      if not args.analyze:
-        return
-      analyzers = {name:sts_analysis_fn[name] for name in args.analyze}
-      for analyzer in analyzers:
-        result = analyzer(dataset)
-        logger.info('-'*40)
-        logger.info(name)
-        if isinstance(result, dict):
-          # Dictionary results
-          for key, value in result.items():
-            logger.info('  {}: {}'.format(key, value))
-        else:
-          # Text results(TSV, pd.dataframe, ...)
-          logger.info('\n' + str(result))
-        logger.info('-'*40)
-        logger.info('')
+      if args.analyze:
+        analyzers = {name:sts_analysis_fn[name] for name in args.analyze}
+        for name, analyzer in analyzers.items():
+          result = analyzer(dataset._data_a, dataset._data_b, dataset._data_pairinfo)
+          logger.info('-'*40)
+          logger.info(name)
+          if isinstance(result, dict):
+            # Dictionary results
+            for key, value in result.items():
+              logger.info('  {}: {}'.format(key, value))
+          else:
+            # Text results(TSV, pd.dataframe, ...)
+            logger.info('\n' + str(result))
+          logger.info('-'*40)
+          logger.info('')
 
       # Save result if needed
       if args.save_result:

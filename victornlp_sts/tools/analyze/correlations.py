@@ -14,9 +14,9 @@ def correlation_pearson_r(inputs_a, inputs_b, inputs_pairinfo):
   
   @param inputs List of dictionaries. Refer to 'corpus.py'' for more details.
   
-  @return Dictionary with keys 'uas' and 'las' in percentage(rounded for 4 digits).
+  @return Dictionary with key 'pearson_r'.
   """
-  batch_size = len(inputs_a)
+  batch_size = len(inputs_pairinfo)
 
   golden = torch.zeros(batch_size)
   predict = torch.zeros(batch_size)
@@ -29,4 +29,27 @@ def correlation_pearson_r(inputs_a, inputs_b, inputs_pairinfo):
 
   pearson_r = torch.sum(x_norm * y_norm) / torch.sqrt(torch.sum(x_norm * x_norm) * torch.sum(y_norm * y_norm))
 
-  return round(pearson_r.item(), 4)
+  return {'pearson-r': round(pearson_r.item(), 4)}
+
+@register_analysis_fn('mse')
+def correlation_mse(inputs_a, inputs_b, inputs_pairinfo):
+  """
+  Calculates Mean Squared Error(MSE).
+  
+  @param inputs List of dictionaries. Refer to 'corpus.py' for more details.
+  
+  @return Dictionary with key 'mse'.
+  """
+  batch_size = len(inputs_pairinfo)
+
+  golden = torch.zeros(batch_size)
+  predict = torch.zeros(batch_size)
+  for i, score in enumerate(inputs_pairinfo):
+    golden[i] = score['sts']
+    predict[i] = score['sts_predict']
+  
+  d = torch.pow(golden - predict, 2)
+
+  mse = torch.sum(d) / batch_size
+
+  return {'mse': round(mse.item(), 4)}
